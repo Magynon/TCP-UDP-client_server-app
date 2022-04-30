@@ -11,8 +11,8 @@ struct TCPmessage
 	char ip[16];
 	uint16_t port;
 	char type[11];
-	char topic[50];
-	char payload[1500];
+	char topic[51];
+	char payload[1501];
 };
 
 struct client
@@ -32,7 +32,7 @@ struct subscriber
 struct TCPcommand
 {
 	char type;
-	char topic[50];
+	char topic[51];
 	char sf;
 };
 
@@ -45,7 +45,7 @@ struct UDPmessage
 
 struct topic
 {
-	char content[50];
+	char content[51];
 	std::list<subscriber> subscribers;
 };
 
@@ -61,7 +61,7 @@ struct topic
 		}                                 \
 	} while (0)
 
-#define BUFLEN 256	   // dimensiunea maxima a calupului de date
+#define BUFLEN 2000	   // dimensiunea maxima a calupului de date
 #define MAX_CLIENTS 10 // numarul maxim de clienti in asteptare
 
 void printClients(std::vector<client> &clients);

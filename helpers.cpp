@@ -29,7 +29,7 @@ void printClients(std::vector<client> &clients)
 
 int clientAlreadyExisting(std::vector<client> &clients, char *id)
 {
-    for (int i = 0; i < clients.size(); i++)
+    for (long unsigned int i = 0; i < clients.size(); i++)
     {
         if (strncmp(clients[i].id, id, 11) == 0)
         {
@@ -56,7 +56,7 @@ void reconnect(client &cli, int sock)
 
     while (!cli.contentNotSent.empty())
     {
-        printf("am de recuperat mesaje\n");
+        // printf("am de recuperat mesaje\n");
         TCPmessage *msg = &cli.contentNotSent.front();
         send(sock, msg->size, 10, 0);
         send(sock, msg, atoi(msg->size), 0);
@@ -72,16 +72,16 @@ void disconnect(std::vector<client> &clients, int sock)
         {
             i.isConnected = false;
             close(sock);
-            printf("Client was disconected\n");
+            printf("Client %s disconnected.\n", i.id);
             return;
         }
     }
-    printf("Client to disconnect not found!\n");
+    // printf("Client to disconnect not found!\n");
 }
 
 int getTopicByContent(std::vector<topic> topics, char *topicContent)
 {
-    for (auto i = 0; i < topics.size(); i++)
+    for (long unsigned int i = 0; i < topics.size(); i++)
     {
         if (strcmp(topics[i].content, topicContent) == 0)
         {
@@ -98,12 +98,12 @@ void convertAndSendTCPmessage(std::vector<topic> &topics, char *buffer, struct s
 
     TCPmessage *tcpMessage = new TCPmessage();
     strcpy(tcpMessage->topic, udpMessage->topic);
-    printf("TOPIC: %s\n", tcpMessage->topic);
+    // printf("TOPIC: %s\n", tcpMessage->topic);
 
     strcpy(tcpMessage->ip, inet_ntoa(udp_addr.sin_addr));
     tcpMessage->port = ntohs(udp_addr.sin_port);
 
-    printf("TYPE: %d\n", udpMessage->type);
+    // printf("TYPE: %d\n", udpMessage->type);
 
     switch (udpMessage->type)
     {
@@ -123,7 +123,7 @@ void convertAndSendTCPmessage(std::vector<topic> &topics, char *buffer, struct s
         {
             DIE(1, "wrong data type");
         }
-        printf("payload: %ld\n", recvNo);
+        // printf("payload: %ld\n", recvNo);
 
         sprintf(tcpMessage->payload, "%ld", recvNo);
         break;
@@ -132,8 +132,15 @@ void convertAndSendTCPmessage(std::vector<topic> &topics, char *buffer, struct s
     {
         strcpy(tcpMessage->type, "SHORT_REAL");
         double recvNo = ntohs(*(uint16_t *)(udpMessage->payload)) / 100.f;
-        sprintf(tcpMessage->payload, "%.2f", recvNo);
-        printf("payload: %.2f\n", recvNo);
+        if (ntohs(*(uint16_t *)(udpMessage->payload)) % 100 == 0)
+        {
+            sprintf(tcpMessage->payload, "%ld", (long)recvNo);
+        }
+        else
+        {
+            sprintf(tcpMessage->payload, "%.2f", recvNo);
+        }
+        // printf("payload: %.2f\n", recvNo);
         break;
     }
     case 2:
@@ -155,7 +162,7 @@ void convertAndSendTCPmessage(std::vector<topic> &topics, char *buffer, struct s
 
         int power = udpMessage->payload[5];
         recvNo /= pow(10, power);
-        printf("payload: %lf\n", recvNo);
+        // printf("payload: %lf\n", recvNo);
         sprintf(tcpMessage->payload, "%lf", recvNo);
 
         break;
@@ -164,11 +171,11 @@ void convertAndSendTCPmessage(std::vector<topic> &topics, char *buffer, struct s
     {
         strcpy(tcpMessage->type, "STRING");
         strcpy(tcpMessage->payload, udpMessage->payload);
-        printf("payload: %s\n", tcpMessage->payload);
+        // printf("payload: %s\n", tcpMessage->payload);
         break;
     }
     default:
-        printf("wrong type of packet: %c ", udpMessage->type);
+        // printf("wrong type of packet: %c ", udpMessage->type);
         return;
     }
 
@@ -179,7 +186,7 @@ void convertAndSendTCPmessage(std::vector<topic> &topics, char *buffer, struct s
 
     if (pos == -1)
     {
-        printf("Topic is yet to be registered\n");
+        // printf("Topic is yet to be registered\n");
         return;
     }
     struct topic top = topics[pos];
@@ -195,7 +202,7 @@ void convertAndSendTCPmessage(std::vector<topic> &topics, char *buffer, struct s
         // if not connected and wants to be kept up to date, save message for later
         else if ((*j).sf == 1)
         {
-            printf("%s is not online, stack messages.\n", (*j).cli->id);
+            // printf("%s is not online, stack messages.\n", (*j).cli->id);
             (*j).cli->contentNotSent.push(*tcpMessage);
         }
     }
@@ -213,17 +220,17 @@ void unsubscribe(std::vector<topic> &topics, int sock, char *topicContent)
             if ((*j).cli->socket == sock)
             {
                 topics[pos].subscribers.erase(j);
-                printf("Client was unsubscribed\n");
-                printSubscriptions(topics);
+                // printf("Client was unsubscribed\n");
+                // printSubscriptions(topics);
 
                 return;
             }
         }
-        printf("Subscriber not found!\n");
+        // printf("Subscriber not found!\n");
     }
     else
     {
-        printf("Topic not found!\n");
+        // printf("Topic not found!\n");
     }
 }
 
@@ -233,7 +240,7 @@ void subscribe(std::vector<topic> &topics, struct TCPcommand *proto, client &cli
     newSubscriber.cli = &cli;
     newSubscriber.sf = proto->sf - 48;
 
-    printf("subscribe request received\n");
+    // printf("subscribe request received\n");
 
     int pos = getTopicByContent(topics, proto->topic);
 
@@ -244,9 +251,9 @@ void subscribe(std::vector<topic> &topics, struct TCPcommand *proto, client &cli
         {
             if (strcmp(j->cli->id, cli.id) == 0)
             {
-                printf("Subscriber already existing. Will update the sf preference.\n");
+                // printf("Subscriber already existing. Will update the sf preference.\n");
                 j->sf = proto->sf - 48;
-                printSubscriptions(topics);
+                // printSubscriptions(topics);
                 return;
             }
         }
@@ -261,5 +268,5 @@ void subscribe(std::vector<topic> &topics, struct TCPcommand *proto, client &cli
         strcpy(newTopic.content, proto->topic);
         topics.push_back(newTopic);
     }
-    printSubscriptions(topics);
+    // printSubscriptions(topics);
 }

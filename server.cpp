@@ -43,6 +43,9 @@ int main(int argc, char *argv[])
 	sockTCP = socket(PF_INET, SOCK_STREAM, 0);
 	DIE(sockTCP < 0, "socket TCP failed");
 
+	int enable = 1;
+	setsockopt(sockTCP, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int));
+
 	portno = atoi(argv[1]);
 	DIE(portno == 0, "atoi");
 
@@ -117,7 +120,8 @@ int main(int argc, char *argv[])
 						// else we will reconnect it
 						if (currentTCPClient.isConnected)
 						{
-							printf("Client %s already connected\n", currentTCPClient.id);
+							printf("Client %s already connected.\n", currentTCPClient.id);
+
 							FD_CLR(newsockTCP, &read_fds);
 							close(newsockTCP);
 							continue;
@@ -130,9 +134,9 @@ int main(int argc, char *argv[])
 								fdmax = newsockTCP;
 							}
 							reconnect(currentTCPClient, newsockTCP);
-							printClients(clients);
+							// printClients(clients);
 
-							printf("Client %s reconnected from %s:%d\n",
+							printf("New client %s connected from %s:%d.\n",
 								   currentTCPClient.id, inet_ntoa(TCP_addr.sin_addr), ntohs(TCP_addr.sin_port));
 							continue;
 						}
@@ -147,25 +151,25 @@ int main(int argc, char *argv[])
 
 						// create a new client and connect it
 						newClient(clients, buffer, newsockTCP);
-						printSubscriptions(topics);
+						// printSubscriptions(topics);
 
-						printClients(clients);
+						// printClients(clients);
 
-						printf("New client %s connected from %s:%d\n",
+						printf("New client %s connected from %s:%d.\n",
 							   buffer, inet_ntoa(TCP_addr.sin_addr), ntohs(TCP_addr.sin_port));
 						continue;
 					}
 				}
 				else if (i == sockUDP)
 				{
-					printf("sockudp\n");
+					// //printf("sockudp\n");
 
 					// s-au primit date pe unul din socketii de client,
 					// asa ca serverul trebuie sa le receptioneze
-					n = recvfrom(sockUDP, buffer, BUFLEN, 0, (struct sockaddr *)&UDP_addr, &UDPlen);
+					n = recvfrom(sockUDP, buffer, sizeof(UDPmessage), 0, (struct sockaddr *)&UDP_addr, &UDPlen);
 					DIE(n < 0, "recv udp failed");
 
-					printf("S-a primit de la clientul de pe socketul %d mesajul: %s\n", i, buffer);
+					// //printf("S-a primit de la clientul de pe socketul %d mesajul: %s\n", i, buffer);
 
 					convertAndSendTCPmessage(topics, buffer, UDP_addr);
 					continue;
@@ -179,20 +183,20 @@ int main(int argc, char *argv[])
 					}
 					else
 					{
-						printf("wrong command kiddo\n");
+						// //printf("wrong command kiddo\n");
 						continue;
 					}
 				}
 				else
 				{
-					printf("recv tcp\n");
+					// //printf("recv tcp\n");
 					n = recv(i, buffer, sizeof(TCPcommand), 0);
 					DIE(n < 0, "recv tcp failed");
 
 					TCPcommand *command = (TCPcommand *)malloc(sizeof(TCPcommand));
 					memcpy(command, buffer, sizeof(TCPcommand));
 
-					// printf("Command type: %c\n", command->type);
+					// //printf("Command type: %c\n", command->type);
 
 					// subscribe
 					if (command->type == '0')
@@ -216,7 +220,7 @@ int main(int argc, char *argv[])
 					else if (command->type == '2')
 					{
 						disconnect(clients, i);
-						printClients(clients);
+						// printClients(clients);
 
 						// clear the socket and update the max sock
 						FD_CLR(i, &read_fds);
@@ -247,6 +251,5 @@ exitServer:
 			close(i);
 		}
 	}
-
 	return 0;
 }
